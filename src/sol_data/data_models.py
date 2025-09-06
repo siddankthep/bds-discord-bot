@@ -2,6 +2,7 @@ from pydantic import BaseModel, RootModel
 from typing import Optional, List, Dict
 
 
+# https://docs.birdeye.so/reference/get-defi-multi_price
 class Price(BaseModel):
     isScaledUiToken: bool
     value: float
@@ -16,6 +17,7 @@ class MultiPriceResponse(RootModel[Dict[str, Price]]):
     root: Dict[str, Price]
 
 
+# https://docs.birdeye.so/reference/get-defi-token_overview
 class TokenExtensions(BaseModel):
     coingeckoId: Optional[str] = None
     serumV3Usdc: Optional[str] = None
@@ -29,7 +31,6 @@ class TokenExtensions(BaseModel):
 
 
 class TokenOverviewResponse(BaseModel):
-    # Basic token info
     address: str
     decimals: int
     symbol: str
@@ -39,12 +40,8 @@ class TokenOverviewResponse(BaseModel):
     extensions: TokenExtensions
     logoURI: str
     liquidity: float
-
-    # Last trade info
     lastTradeUnixTime: int
     lastTradeHumanTime: str
-
-    # Current price and price changes
     price: float
     history1mPrice: float
     priceChange1mPercent: float
@@ -66,8 +63,6 @@ class TokenOverviewResponse(BaseModel):
     priceChange12hPercent: float
     history24hPrice: float
     priceChange24hPercent: float
-
-    # Unique wallet metrics
     uniqueWallet1m: int
     uniqueWalletHistory1m: int
     uniqueWallet1mChangePercent: float
@@ -92,13 +87,9 @@ class TokenOverviewResponse(BaseModel):
     uniqueWallet24h: int
     uniqueWalletHistory24h: int
     uniqueWallet24hChangePercent: float
-
-    # Supply metrics
     totalSupply: float
     circulatingSupply: float
     holder: int
-
-    # Trade count metrics
     trade1m: int
     tradeHistory1m: int
     trade1mChangePercent: float
@@ -171,8 +162,6 @@ class TokenOverviewResponse(BaseModel):
     buy24h: int
     buyHistory24h: int
     buy24hChangePercent: float
-
-    # Volume metrics
     v1m: float
     v1mUSD: float
     vHistory1m: float
@@ -293,83 +282,57 @@ class TokenOverviewResponse(BaseModel):
     vSellHistory24h: float
     vSellHistory24hUSD: float
     vSell24hChangePercent: float
-
-    # Additional metrics
     numberMarkets: int
     isScaledUiToken: bool
     multiplier: Optional[float] = None
 
 
+# https://docs.birdeye.so/reference/get-defi-token_security
 class TokenSecurityResponse(BaseModel):
-    # Creator information
     creatorAddress: str
     creatorOwnerAddress: Optional[str] = None
     creatorBalance: float
     creatorPercentage: float
-
-    # Owner information
     ownerAddress: Optional[str] = None
     ownerOfOwnerAddress: Optional[str] = None
     ownerBalance: Optional[float] = None
     ownerPercentage: Optional[float] = None
-
-    # Creation details
     creationTx: str
     creationTime: int
     creationSlot: int
-
-    # Mint details
     mintTx: str
     mintTime: int
     mintSlot: int
-
-    # Metaplex metadata authority
     metaplexUpdateAuthority: str
     metaplexOwnerUpdateAuthority: Optional[str] = None
     metaplexUpdateAuthorityBalance: float
     metaplexUpdateAuthorityPercent: float
     mutableMetadata: bool
-
-    # Top holders information
     top10HolderBalance: float
     top10HolderPercent: float
     top10UserBalance: float
     top10UserPercent: float
-
-    # Token characteristics
     isTrueToken: Optional[bool] = None
     fakeToken: Optional[bool] = None
     totalSupply: float
-
-    # Pre-market and holder data
-    preMarketHolder: List = []  # Empty list in the example, could be List[str] if it contains addresses
-
-    # Lock and freeze information
-    lockInfo: Optional[str] = None  # Could be a complex object, using str for now
+    preMarketHolder: List = []
+    lockInfo: Optional[str] = None
     freezeable: Optional[bool] = None
     freezeAuthority: Optional[str] = None
-
-    # Transfer fee information
     transferFeeEnable: Optional[bool] = None
-    transferFeeData: Optional[str] = None  # Could be a complex object, using str for now
-
-    # Token standard and features
+    transferFeeData: Optional[str] = None
     isToken2022: bool
     nonTransferable: Optional[bool] = None
     jupStrictList: bool
 
 
+# https://docs.birdeye.so/reference/get-defi-token_creation_info
 class TokenCreationInfoResponse(BaseModel):
-    # Transaction details
     txHash: str
     slot: int
-
-    # Token information
     tokenAddress: str
     decimals: int
     owner: str
-
-    # Timing information
     blockUnixTime: int
     blockHumanTime: str
 
@@ -385,10 +348,12 @@ class TokenHolder(BaseModel):
     multiplier: Optional[float] = None
 
 
+# https://docs.birdeye.so/reference/get-defi-v3-token-holder
 class TokenHoldersResponse(BaseModel):
     items: List[TokenHolder]
 
 
+# https://docs.birdeye.so/reference/get-defi-v3-token-mint-burn-txs
 class MintBurnTx(BaseModel):
     amount: str
     block_human_time: str
