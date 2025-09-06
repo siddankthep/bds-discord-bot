@@ -10,6 +10,8 @@ from src.db.database import DatabaseConnection
 
 load_dotenv()
 
+WRAPPED_TOKENS = {"SOL": "So11111111111111111111111111111111111111112", "ETH": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"}
+
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 BIRDEYE_API_KEY = os.getenv("BIRDEYE_API_KEY")
 
@@ -37,83 +39,7 @@ class MyClient(discord.Client):
         # if not self.monitor_task or self.monitor_task.done():
         #     self.monitor_task = asyncio.create_task(self.monitor_loop())
 
-    async def send_notification(self, user_id: int, text: str, channel_id: Optional[int]):
-        try:
-            if channel_id:
-                ch = self.get_channel(channel_id) or await self.fetch_channel(channel_id)
-                await ch.send(text)
-            else:
-                user = self.get_user(user_id) or await self.fetch_user(user_id)
-                await user.send(text)
-            logger.info(f"Sent notification to {user_id} in channel {channel_id}")
 
-        except Exception as e:
-            logger.warning("Notify failed for %s: %s", user_id, e)
-
-    async def monitor_loop(self):
-        # Single loop scans all watches; each user has its own poll cadence via next_due bookkeeping
-        logger.info("Price monitor started")
-        while True:
-            try:
-                all_wallets = await self.db.get_all_wallets()
-                for wallet in all_wallets:
-                    price_watch = await self.db.get_price_watch(wallet.discord_id)
-                    if price_watch:
-                        all_users_tokens = self.bds.get_wallet_portfolio(wallet.wallet_address).get("data", {}).get("items", [])
-                        for token in all_users_tokens:
-                            token_overview = self.bds.get_token_overview(token.get("address"))
-                            if not token_overview.get("success"):
-                                logger.error(f"Failed to get token data for {token.get('address')}: {token_overview.get('error')}")
-                                continue
-                            token_overview_data = token_overview.get("data", {})
-                            price_change_5m = token_overview_data.get("priceChange5mPercent", 0)
-                            if price_change_5m > price_watch.threshold:
-                                token_creation_info = self.bds.get_token_creation_info(token.get("address"))
-                                if not token_creation_info.get("success"):
-                                    token_creation_time = "-"
-                                else:
-                                    token_creation_time = (
-                                        token_creation_info.get("data", {}).get("blockHumanTime", "-") if token_creation_info.get("data") else "-"
-                                    )
-
-                                security_info = self.bds.get_token_security(token.get("address"))
-                                if not security_info.get("success"):
-                                    security_info = "-"
-                                else:
-                                    security_data = security_info.get("data", {})
-                                    no_mint = security_data.get("ownerOfOwnerAddress") == "11111111111111111111111111111111"
-
-                                    non_transferable = bool(security_data.get("nonTransferable"))  # None/False -> not enforced
-                                    blacklist_safe = not non_transferable
-
-                                    total_supply = token_overview_data.get("totalSupply", 1)
-
-                                top_10_holders = self.bds.get_token_holders(token.get("address"))
-                                top_10_holders_data = top_10_holders.get("data", {}).get("items", [])
-                                top_10_holders_pct = [item.get("ui_amount", 0) / total_supply * 100 for item in top_10_holders_data]
-                                top_10_holders_pct_str = [f"{pct:.2f}%" for pct in top_10_holders_pct]
-                                top_10_holders_pct_str_formatted = " | ".join(top_10_holders_pct_str)
-
-                                formatted_response = build_token_card(
-                                    token,
-                                    token_overview_data,
-                                    token_creation_time,
-                                    no_mint,
-                                    blacklist_safe,
-                                    top_10_holders_pct_str_formatted,
-                                    "Solana",
-                                )
-
-                                await self.send_notification(
-                                    wallet.discord_id,
-                                    formatted_response,
-                                    None,
-                                )
-
-                await asyncio.sleep(5 * 60)  # Update every frame
-            except Exception as e:
-                logger.exception("Monitor loop error: %s", e)
-                await asyncio.sleep(5)
 
 
 client = MyClient(intents=intents)
@@ -145,9 +71,9 @@ async def hello(interaction: discord.Interaction, name: str):
 async def setup(interaction: discord.Interaction, wallet_address: str, price_watch: float):
     client.logger.info(f"Setup command received: {wallet_address}, {price_watch}")
     try:
-        await client.db.insert_ignore_wallet(interaction.user.id, wallet_address)
-        await client.db.upsert_price_watch(interaction.user.id, price_watch)
-        await interaction.response.send_message(
+        client.db.upsert_wallet(interaction.user.id, wallet_address)
+        client.db.upsert_price_watch(interaction.user.id, price_watch)
+        interaction.response.send_message(
             f"Setup complete: {wallet_address}, {price_watch}! Now you will receive a notification when the price of the token you are watching reaches your threshold."
         )
     except Exception as e:
@@ -165,8 +91,8 @@ async def get_token_alert(interaction: discord.Interaction):
         print("DEBUG: Interaction response deferred")
 
         # Check if user has setup
-        price_watch = await client.db.get_price_watch(interaction.user.id)
-        wallet = await client.db.get_wallet(interaction.user.id)
+        price_watch = client.db.get_price_watch(interaction.user.id)
+        wallet = client.db.get_wallet(interaction.user.id)
 
         print(f"DEBUG: price_watch = {price_watch}, wallet = {wallet}")
         logger.info(f"Retrieved price_watch: {price_watch}, wallet: {wallet}")
@@ -201,7 +127,10 @@ async def get_token_alert(interaction: discord.Interaction):
 
         for token in all_users_tokens:
             tokens_checked += 1
+            token_name = token.get("name")
             token_address = token.get("address")
+            if token_name in WRAPPED_TOKENS:
+                token_address = WRAPPED_TOKENS[token_name]
             print(f"DEBUG: Checking token {tokens_checked}/{len(all_users_tokens)}: {token_address}")
 
             token_overview = client.bds.get_token_overview(token_address)
@@ -217,6 +146,11 @@ async def get_token_alert(interaction: discord.Interaction):
 
             print(f"DEBUG: Token {token_address} - Price change 5m: {price_change_5m}%, Threshold: {price_watch.threshold}%")
             logger.info(f"Token {token_address} - Price change: {price_change_5m}%, Threshold: {price_watch.threshold}%")
+
+            if not price_change_5m:
+                print(f"DEBUG: Token {token_address} has no price change 5m")
+                logger.info(f"Token {token_address} has no price change 5m")
+                continue
 
             if price_change_5m > price_watch.threshold:
                 print(f"DEBUG: Token {token_address} meets threshold! Getting additional data...")
