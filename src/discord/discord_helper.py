@@ -4,7 +4,7 @@ from typing import Optional
 from dotenv import load_dotenv
 import discord
 from discord import app_commands
-from src.bds.birdeye import BirdeyeHelper
+from src.sol_data.data_manager import DataManager
 from src.discord.logger import handler, logger
 from src.db.database import DatabaseConnection
 
@@ -21,24 +21,18 @@ if not BIRDEYE_API_KEY:
     raise SystemExit("BIRDEYE_API_KEY is not set in your environment/.env")
 
 intents = discord.Intents.default()
-intents.message_content = True  # also enable this in the Developer Portal
-
+intents.message_content = True
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
-        # self.monitor_task: Optional[asyncio.Task] = None
         self.logger = logger
         self.db = DatabaseConnection()
-        self.bds = BirdeyeHelper(api_key=BIRDEYE_API_KEY, chain="solana")
+        self.data_manager = DataManager(api_key=BIRDEYE_API_KEY, chain="solana")
 
     async def setup_hook(self):
         await self.tree.sync()
-        # start background monitor
-        # if not self.monitor_task or self.monitor_task.done():
-        #     self.monitor_task = asyncio.create_task(self.monitor_loop())
-
 
 
 
@@ -57,14 +51,6 @@ async def on_message(message: discord.Message):
     if message.content.startswith("$hello"):
         client.logger.info(f"Message received: {message.content}")
         await message.channel.send("Hello!")
-
-
-@client.tree.command(name="hello", description="Say hello")
-@app_commands.describe(name="The name to say hello to")
-async def hello(interaction: discord.Interaction, name: str):
-    client.logger.info(f"Hello command received: {name}")
-    await interaction.response.send_message(f"Hello {name}!")
-
 
 @client.tree.command(name="setup", description="Setup your wallet and price watch")
 @app_commands.describe(wallet_address="The Solana wallet address to check", price_watch="The price to watch")
@@ -106,7 +92,7 @@ async def get_token_alert(interaction: discord.Interaction):
         logger.info(f"Getting portfolio for wallet {wallet.wallet_address}")
 
         # Get user's tokens
-        portfolio_response = client.bds.get_wallet_portfolio(wallet.wallet_address)
+        portfolio_response = client.data_manager.get_wallet_portfolio(wallet.wallet_address)
         print(f"DEBUG: Portfolio response: {portfolio_response}")
 
         all_users_tokens = portfolio_response.get("data", {}).get("items", [])
@@ -133,7 +119,7 @@ async def get_token_alert(interaction: discord.Interaction):
                 token_address = WRAPPED_TOKENS[token_name]
             print(f"DEBUG: Checking token {tokens_checked}/{len(all_users_tokens)}: {token_address}")
 
-            token_overview = client.bds.get_token_overview(token_address)
+            token_overview = client.data_manager.get_token_overview(token_address)
             print(f"DEBUG: Token overview response: {token_overview}")
 
             if not token_overview.get("success"):
@@ -155,13 +141,13 @@ async def get_token_alert(interaction: discord.Interaction):
             if price_change_5m > price_watch.threshold:
                 print(f"DEBUG: Token {token_address} meets threshold! Getting additional data...")
 
-                token_creation_info = client.bds.get_token_creation_info(token_address)
+                token_creation_info = client.data_manager.get_token_creation_info(token_address)
                 if not token_creation_info.get("success"):
                     token_creation_time = "-"
                 else:
                     token_creation_time = token_creation_info.get("data", {}).get("blockHumanTime", "-") if token_creation_info.get("data") else "-"
 
-                security_info = client.bds.get_token_security(token_address)
+                security_info = client.data_manager.get_token_security(token_address)
                 if not security_info.get("success"):
                     print(f"DEBUG: Failed to get security info for {token_address}")
                     no_mint = None
@@ -174,7 +160,7 @@ async def get_token_alert(interaction: discord.Interaction):
 
                 total_supply = token_overview_data.get("totalSupply", 1)
 
-                top_10_holders = client.bds.get_token_holders(token_address)
+                top_10_holders = client.data_manager.get_token_holders(token_address)
                 top_10_holders_data = top_10_holders.get("data", {}).get("items", [])
                 top_10_holders_pct = [item.get("ui_amount", 0) / total_supply * 100 for item in top_10_holders_data]
                 top_10_holders_pct_str = [f"{pct:.2f}%" for pct in top_10_holders_pct]
@@ -270,13 +256,6 @@ def _fmt_price_with_zeroes(p):
 
 def _yn(flag):
     return "✅" if flag is True else ("❌" if flag is False else "—")
-
-
-def _pct(x, decimals=2):
-    try:
-        return f"{float(x):.{decimals}f}%"
-    except Exception:
-        return "-"
 
 
 def build_token_card(
