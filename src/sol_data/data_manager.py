@@ -70,7 +70,8 @@ class DataManager:
         data = r.json()
         # DataManager JSON envelope: usually {"success": true, "data": {...}}
         if isinstance(data, dict) and data.get("success") is False:
-            raise DataManagerAPIError(f"DataManager error: {data}")
+            raise DataManagerAPIError(f"Error fetching data from Birdeye: {data.get('message')}")
+            
         return data.get("data")
 
     def to_csv(self, addresses: Iterable[str]) -> str:

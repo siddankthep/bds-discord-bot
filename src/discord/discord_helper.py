@@ -1,10 +1,10 @@
 import os
-import asyncio
-from typing import Optional
+from typing import Optional, List
 from dotenv import load_dotenv
 import discord
 from discord import app_commands
-from src.sol_data.data_manager import DataManager
+from src.sol_data.data_manager import DataManager, DataManagerAPIError
+from src.sol_data.data_models import WalletPortfolioItem, TokenOverviewResponse
 from src.discord.logger import handler, logger
 from src.db.database import DatabaseConnection
 
@@ -95,7 +95,7 @@ async def get_token_alert(interaction: discord.Interaction):
         portfolio_response = client.data_manager.get_wallet_portfolio(wallet.wallet_address)
         print(f"DEBUG: Portfolio response: {portfolio_response}")
 
-        all_users_tokens = portfolio_response.get("data", {}).get("items", [])
+        all_users_tokens = portfolio_response.items
         print(f"DEBUG: Found {len(all_users_tokens)} tokens in portfolio")
         logger.info(f"Found {len(all_users_tokens)} tokens in portfolio")
 
@@ -113,27 +113,24 @@ async def get_token_alert(interaction: discord.Interaction):
 
         for token in all_users_tokens:
             tokens_checked += 1
-            token_name = token.get("name")
-            token_address = token.get("address")
+            token_name = token.name
+            token_address = token.address
             if token_name in WRAPPED_TOKENS:
                 token_address = WRAPPED_TOKENS[token_name]
             print(f"DEBUG: Checking token {tokens_checked}/{len(all_users_tokens)}: {token_address}")
 
-            token_overview = client.data_manager.get_token_overview(token_address)
-            print(f"DEBUG: Token overview response: {token_overview}")
-
-            if not token_overview.get("success"):
-                print(f"DEBUG: Failed to get token data for {token_address}: {token_overview.get('error')}")
-                logger.error(f"Failed to get token data for {token_address}: {token_overview.get('error')}")
+            try:
+                token_overview = client.data_manager.get_token_overview(token_address)
+            except DataManagerAPIError as e:
+                logger.error(f"Failed to get token data for {token_address}: {e}")
                 continue
 
-            token_overview_data = token_overview.get("data", {})
-            price_change_5m = token_overview_data.get("priceChange5mPercent", 0)
+            price_change_5m = token_overview.priceChange5mPercent
 
             print(f"DEBUG: Token {token_address} - Price change 5m: {price_change_5m}%, Threshold: {price_watch.threshold}%")
             logger.info(f"Token {token_address} - Price change: {price_change_5m}%, Threshold: {price_watch.threshold}%")
 
-            if not price_change_5m:
+            if price_change_5m is None:
                 print(f"DEBUG: Token {token_address} has no price change 5m")
                 logger.info(f"Token {token_address} has no price change 5m")
                 continue
@@ -141,34 +138,42 @@ async def get_token_alert(interaction: discord.Interaction):
             if price_change_5m > price_watch.threshold:
                 print(f"DEBUG: Token {token_address} meets threshold! Getting additional data...")
 
-                token_creation_info = client.data_manager.get_token_creation_info(token_address)
-                if not token_creation_info.get("success"):
+                try:
+                    token_creation_info = client.data_manager.get_token_creation_info(token_address)
+                    token_creation_time = token_creation_info.blockHumanTime
+                except DataManagerAPIError as e:
+                    logger.error(f"Failed to get token creation info for {token_address}: {e}")
                     token_creation_time = "-"
-                else:
-                    token_creation_time = token_creation_info.get("data", {}).get("blockHumanTime", "-") if token_creation_info.get("data") else "-"
 
-                security_info = client.data_manager.get_token_security(token_address)
-                if not security_info.get("success"):
-                    print(f"DEBUG: Failed to get security info for {token_address}")
+                try:
+                    security_info = client.data_manager.get_token_security(token_address)
+                    no_mint = security_info.ownerOfOwnerAddress == "11111111111111111111111111111111"
+                    non_transferable = bool(security_info.nonTransferable)
+                    blacklist_safe = not non_transferable
+                except DataManagerAPIError as e:
+                    logger.error(f"Failed to get security info for {token_address}: {e}")
                     no_mint = None
                     blacklist_safe = None
-                else:
-                    security_data = security_info.get("data", {})
-                    no_mint = security_data.get("ownerOfOwnerAddress") == "11111111111111111111111111111111"
-                    non_transferable = bool(security_data.get("nonTransferable"))
-                    blacklist_safe = not non_transferable
 
-                total_supply = token_overview_data.get("totalSupply", 1)
 
-                top_10_holders = client.data_manager.get_token_holders(token_address)
-                top_10_holders_data = top_10_holders.get("data", {}).get("items", [])
-                top_10_holders_pct = [item.get("ui_amount", 0) / total_supply * 100 for item in top_10_holders_data]
-                top_10_holders_pct_str = [f"{pct:.2f}%" for pct in top_10_holders_pct]
-                top_10_holders_pct_str_formatted = " | ".join(top_10_holders_pct_str)
+                total_supply = token_overview.totalSupply
+
+                try:
+                    top_10_holders = client.data_manager.get_token_holders(token_address)
+                    top_10_holders_data = top_10_holders.items
+                    top_10_holders_pct = [item.ui_amount / total_supply * 100 for item in top_10_holders_data]
+                    top_10_holders_pct_str = [f"{pct:.2f}%" for pct in top_10_holders_pct]
+                    top_10_holders_pct_str_formatted = " | ".join(top_10_holders_pct_str)
+                except DataManagerAPIError as e:
+                    logger.error(f"Failed to get top 10 holders for {token_address}: {e}")
+                    top_10_holders_data = []
+                    top_10_holders_pct = []
+                    top_10_holders_pct_str = []
+
 
                 formatted_response = build_token_card(
                     token,
-                    token_overview_data,
+                    token_overview,
                     token_creation_time,
                     no_mint,
                     blacklist_safe,
@@ -259,23 +264,23 @@ def _yn(flag):
 
 
 def build_token_card(
-    token,
-    token_overview_data,
-    token_creation_time,
-    no_mint=None,
-    blacklist_safe=None,  # bool | None (from token_security)
-    top_10_holders_pct_str_formatted=None,  # list[float] (each already in %), optional
+    token: WalletPortfolioItem,
+    token_overview: TokenOverviewResponse,
+    token_creation_time: str,
+    no_mint: Optional[bool] = None,
+    blacklist_safe: Optional[bool] = None,  # bool | None (from token_security)
+    top_10_holders_pct_str_formatted: List[float] = None,  # list[float] (each already in %), optional
     chain="Solana",
 ):
     # Pull what you already computed in your snippet
-    liquidity = token_overview_data.get("liquidity", 0)
-    price = token_overview_data.get("price", 0)
-    token_symbol = token_overview_data.get("symbol", "Unknown")
-    market_cap = token_overview_data.get("marketCap", 0)
-    price_change_5m = token_overview_data.get("priceChange5mPercent", 0)
+    liquidity = token_overview.liquidity
+    price = token_overview.price
+    token_symbol = token_overview.symbol or "Unknown"
+    market_cap = token_overview.marketCap
+    price_change_5m = token_overview.priceChange5mPercent
 
     # Header
-    addr = token.get("address", "—")
+    addr = token.address or "—"
     header_left = f"${token_symbol} – {chain}"
     header = f"{header_left}\n{addr}"
 
