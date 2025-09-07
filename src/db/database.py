@@ -5,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
 from dotenv import load_dotenv
 import os
 
+
 load_dotenv()
 
 
@@ -41,11 +42,7 @@ url = URL.create(
 
 class DatabaseConnection:
     def __init__(self):
-        self.engine = create_engine(
-            url,
-            echo=False,
-            pool_pre_ping=True,
-        )
+        self.engine = create_engine(url, echo=False, pool_pre_ping=True, connect_args={"sslmode": "require"})
         self.session_maker = sessionmaker(self.engine, expire_on_commit=False)
 
     def get_session(self) -> Session:

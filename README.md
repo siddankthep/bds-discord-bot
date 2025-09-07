@@ -1,2 +1,2 @@
-# bds-discord-bot
-A discord bot that pulls data from Birdeye and alert the user if a token price changes above a specific threshold
+# SOL Discord Alert Bot
+A discord bot that pulls data for Solana and alert the user if a token price changes above a specific threshold

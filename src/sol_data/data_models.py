@@ -4,13 +4,13 @@ from typing import Optional, List, Dict
 
 # https://docs.birdeye.so/reference/get-defi-multi_price
 class Price(BaseModel):
-    isScaledUiToken: bool
-    value: float
-    updateUnixTime: int
-    updateHumanTime: str
-    priceChange24h: float
-    priceInNative: float
-    liquidity: float
+    isScaledUiToken: Optional[bool] = None
+    value: Optional[float] = None
+    updateUnixTime: Optional[int] = None
+    updateHumanTime: Optional[str] = None
+    priceChange24h: Optional[float] = None
+    priceInNative: Optional[float] = None
+    liquidity: Optional[float] = None
 
 
 class MultiPriceResponse(RootModel[Dict[str, Price]]):
@@ -31,320 +31,320 @@ class TokenExtensions(BaseModel):
 
 
 class TokenOverviewResponse(BaseModel):
-    address: str
-    decimals: int
-    symbol: str
-    name: str
-    marketCap: float
-    fdv: float
-    extensions: TokenExtensions
-    logoURI: str
-    liquidity: float
-    lastTradeUnixTime: int
-    lastTradeHumanTime: str
-    price: float
-    history1mPrice: float
-    priceChange1mPercent: float
-    history5mPrice: float
-    priceChange5mPercent: float
-    history30mPrice: float
-    priceChange30mPercent: float
-    history1hPrice: float
-    priceChange1hPercent: float
-    history2hPrice: float
-    priceChange2hPercent: float
-    history4hPrice: float
-    priceChange4hPercent: float
-    history6hPrice: float
-    priceChange6hPercent: float
-    history8hPrice: float
-    priceChange8hPercent: float
-    history12hPrice: float
-    priceChange12hPercent: float
-    history24hPrice: float
-    priceChange24hPercent: float
-    uniqueWallet1m: int
-    uniqueWalletHistory1m: int
-    uniqueWallet1mChangePercent: float
-    uniqueWallet5m: int
-    uniqueWalletHistory5m: int
-    uniqueWallet5mChangePercent: float
-    uniqueWallet30m: int
-    uniqueWalletHistory30m: int
-    uniqueWallet30mChangePercent: float
-    uniqueWallet1h: int
-    uniqueWalletHistory1h: int
-    uniqueWallet1hChangePercent: float
-    uniqueWallet2h: int
-    uniqueWalletHistory2h: int
-    uniqueWallet2hChangePercent: float
-    uniqueWallet4h: int
-    uniqueWalletHistory4h: int
-    uniqueWallet4hChangePercent: float
-    uniqueWallet8h: int
-    uniqueWalletHistory8h: int
-    uniqueWallet8hChangePercent: float
-    uniqueWallet24h: int
-    uniqueWalletHistory24h: int
-    uniqueWallet24hChangePercent: float
-    totalSupply: float
-    circulatingSupply: float
-    holder: int
-    trade1m: int
-    tradeHistory1m: int
-    trade1mChangePercent: float
-    sell1m: int
-    sellHistory1m: int
-    sell1mChangePercent: float
-    buy1m: int
-    buyHistory1m: int
-    buy1mChangePercent: float
-    trade5m: int
-    tradeHistory5m: int
-    trade5mChangePercent: float
-    sell5m: int
-    sellHistory5m: int
-    sell5mChangePercent: float
-    buy5m: int
-    buyHistory5m: int
-    buy5mChangePercent: float
-    trade30m: int
-    tradeHistory30m: int
-    trade30mChangePercent: float
-    sell30m: int
-    sellHistory30m: int
-    sell30mChangePercent: float
-    buy30m: int
-    buyHistory30m: int
-    buy30mChangePercent: float
-    trade1h: int
-    tradeHistory1h: int
-    trade1hChangePercent: float
-    sell1h: int
-    sellHistory1h: int
-    sell1hChangePercent: float
-    buy1h: int
-    buyHistory1h: int
-    buy1hChangePercent: float
-    trade2h: int
-    tradeHistory2h: int
-    trade2hChangePercent: float
-    sell2h: int
-    sellHistory2h: int
-    sell2hChangePercent: float
-    buy2h: int
-    buyHistory2h: int
-    buy2hChangePercent: float
-    trade4h: int
-    tradeHistory4h: int
-    trade4hChangePercent: float
-    sell4h: int
-    sellHistory4h: int
-    sell4hChangePercent: float
-    buy4h: int
-    buyHistory4h: int
-    buy4hChangePercent: float
-    trade8h: int
-    tradeHistory8h: int
-    trade8hChangePercent: float
-    sell8h: int
-    sellHistory8h: int
-    sell8hChangePercent: float
-    buy8h: int
-    buyHistory8h: int
-    buy8hChangePercent: float
-    trade24h: int
-    tradeHistory24h: int
-    trade24hChangePercent: float
-    sell24h: int
-    sellHistory24h: int
-    sell24hChangePercent: float
-    buy24h: int
-    buyHistory24h: int
-    buy24hChangePercent: float
-    v1m: float
-    v1mUSD: float
-    vHistory1m: float
-    vHistory1mUSD: float
-    v1mChangePercent: float
-    vBuy1m: float
-    vBuy1mUSD: float
-    vBuyHistory1m: float
-    vBuyHistory1mUSD: float
-    vBuy1mChangePercent: float
-    vSell1m: float
-    vSell1mUSD: float
-    vSellHistory1m: float
-    vSellHistory1mUSD: float
-    vSell1mChangePercent: float
-    v5m: float
-    v5mUSD: float
-    vHistory5m: float
-    vHistory5mUSD: float
-    v5mChangePercent: float
-    vBuy5m: float
-    vBuy5mUSD: float
-    vBuyHistory5m: float
-    vBuyHistory5mUSD: float
-    vBuy5mChangePercent: float
-    vSell5m: float
-    vSell5mUSD: float
-    vSellHistory5m: float
-    vSellHistory5mUSD: float
-    vSell5mChangePercent: float
-    v30m: float
-    v30mUSD: float
-    vHistory30m: float
-    vHistory30mUSD: float
-    v30mChangePercent: float
-    vBuy30m: float
-    vBuy30mUSD: float
-    vBuyHistory30m: float
-    vBuyHistory30mUSD: float
-    vBuy30mChangePercent: float
-    vSell30m: float
-    vSell30mUSD: float
-    vSellHistory30m: float
-    vSellHistory30mUSD: float
-    vSell30mChangePercent: float
-    v1h: float
-    v1hUSD: float
-    vHistory1h: float
-    vHistory1hUSD: float
-    v1hChangePercent: float
-    vBuy1h: float
-    vBuy1hUSD: float
-    vBuyHistory1h: float
-    vBuyHistory1hUSD: float
-    vBuy1hChangePercent: float
-    vSell1h: float
-    vSell1hUSD: float
-    vSellHistory1h: float
-    vSellHistory1hUSD: float
-    vSell1hChangePercent: float
-    v2h: float
-    v2hUSD: float
-    vHistory2h: float
-    vHistory2hUSD: float
-    v2hChangePercent: float
-    vBuy2h: float
-    vBuy2hUSD: float
-    vBuyHistory2h: float
-    vBuyHistory2hUSD: float
-    vBuy2hChangePercent: float
-    vSell2h: float
-    vSell2hUSD: float
-    vSellHistory2h: float
-    vSellHistory2hUSD: float
-    vSell2hChangePercent: float
-    v4h: float
-    v4hUSD: float
-    vHistory4h: float
-    vHistory4hUSD: float
-    v4hChangePercent: float
-    vBuy4h: float
-    vBuy4hUSD: float
-    vBuyHistory4h: float
-    vBuyHistory4hUSD: float
-    vBuy4hChangePercent: float
-    vSell4h: float
-    vSell4hUSD: float
-    vSellHistory4h: float
-    vSellHistory4hUSD: float
-    vSell4hChangePercent: float
-    v8h: float
-    v8hUSD: float
-    vHistory8h: float
-    vHistory8hUSD: float
-    v8hChangePercent: float
-    vBuy8h: float
-    vBuy8hUSD: float
-    vBuyHistory8h: float
-    vBuyHistory8hUSD: float
-    vBuy8hChangePercent: float
-    vSell8h: float
-    vSell8hUSD: float
-    vSellHistory8h: float
-    vSellHistory8hUSD: float
-    vSell8hChangePercent: float
-    v24h: float
-    v24hUSD: float
-    vHistory24h: float
-    vHistory24hUSD: float
-    v24hChangePercent: float
-    vBuy24h: float
-    vBuy24hUSD: float
-    vBuyHistory24h: float
-    vBuyHistory24hUSD: float
-    vBuy24hChangePercent: float
-    vSell24h: float
-    vSell24hUSD: float
-    vSellHistory24h: float
-    vSellHistory24hUSD: float
-    vSell24hChangePercent: float
-    numberMarkets: int
-    isScaledUiToken: bool
+    address: Optional[str] = None
+    decimals: Optional[int] = None
+    symbol: Optional[str] = None
+    name: Optional[str] = None
+    marketCap: Optional[float] = None
+    fdv: Optional[float] = None
+    extensions: Optional[TokenExtensions] = None
+    logoURI: Optional[str] = None
+    liquidity: Optional[float] = None
+    lastTradeUnixTime: Optional[int] = None
+    lastTradeHumanTime: Optional[str] = None
+    price: Optional[float] = None
+    history1mPrice: Optional[float] = None
+    priceChange1mPercent: Optional[float] = None
+    history5mPrice: Optional[float] = None
+    priceChange5mPercent: Optional[float] = None
+    history30mPrice: Optional[float] = None
+    priceChange30mPercent: Optional[float] = None
+    history1hPrice: Optional[float] = None
+    priceChange1hPercent: Optional[float] = None
+    history2hPrice: Optional[float] = None
+    priceChange2hPercent: Optional[float] = None
+    history4hPrice: Optional[float] = None
+    priceChange4hPercent: Optional[float] = None
+    history6hPrice: Optional[float] = None
+    priceChange6hPercent: Optional[float] = None
+    history8hPrice: Optional[float] = None
+    priceChange8hPercent: Optional[float] = None
+    history12hPrice: Optional[float] = None
+    priceChange12hPercent: Optional[float] = None
+    history24hPrice: Optional[float] = None
+    priceChange24hPercent: Optional[float] = None
+    uniqueWallet1m: Optional[int] = None
+    uniqueWalletHistory1m: Optional[int] = None
+    uniqueWallet1mChangePercent: Optional[float] = None
+    uniqueWallet5m: Optional[int] = None
+    uniqueWalletHistory5m: Optional[int] = None
+    uniqueWallet5mChangePercent: Optional[float] = None
+    uniqueWallet30m: Optional[int] = None
+    uniqueWalletHistory30m: Optional[int] = None
+    uniqueWallet30mChangePercent: Optional[float] = None
+    uniqueWallet1h: Optional[int] = None
+    uniqueWalletHistory1h: Optional[int] = None
+    uniqueWallet1hChangePercent: Optional[float] = None
+    uniqueWallet2h: Optional[int] = None
+    uniqueWalletHistory2h: Optional[int] = None
+    uniqueWallet2hChangePercent: Optional[float] = None
+    uniqueWallet4h: Optional[int] = None
+    uniqueWalletHistory4h: Optional[int] = None
+    uniqueWallet4hChangePercent: Optional[float] = None
+    uniqueWallet8h: Optional[int] = None
+    uniqueWalletHistory8h: Optional[int] = None
+    uniqueWallet8hChangePercent: Optional[float] = None
+    uniqueWallet24h: Optional[int] = None
+    uniqueWalletHistory24h: Optional[int] = None
+    uniqueWallet24hChangePercent: Optional[float] = None
+    totalSupply: Optional[float] = None
+    circulatingSupply: Optional[float] = None
+    holder: Optional[int] = None
+    trade1m: Optional[int] = None
+    tradeHistory1m: Optional[int] = None
+    trade1mChangePercent: Optional[float] = None
+    sell1m: Optional[int] = None
+    sellHistory1m: Optional[int] = None
+    sell1mChangePercent: Optional[float] = None
+    buy1m: Optional[int] = None
+    buyHistory1m: Optional[int] = None
+    buy1mChangePercent: Optional[float] = None
+    trade5m: Optional[int] = None
+    tradeHistory5m: Optional[int] = None
+    trade5mChangePercent: Optional[float] = None
+    sell5m: Optional[int] = None
+    sellHistory5m: Optional[int] = None
+    sell5mChangePercent: Optional[float] = None
+    buy5m: Optional[int] = None
+    buyHistory5m: Optional[int] = None
+    buy5mChangePercent: Optional[float] = None
+    trade30m: Optional[int] = None
+    tradeHistory30m: Optional[int] = None
+    trade30mChangePercent: Optional[float] = None
+    sell30m: Optional[int] = None
+    sellHistory30m: Optional[int] = None
+    sell30mChangePercent: Optional[float] = None
+    buy30m: Optional[int] = None
+    buyHistory30m: Optional[int] = None
+    buy30mChangePercent: Optional[float] = None
+    trade1h: Optional[int] = None
+    tradeHistory1h: Optional[int] = None
+    trade1hChangePercent: Optional[float] = None
+    sell1h: Optional[int] = None
+    sellHistory1h: Optional[int] = None
+    sell1hChangePercent: Optional[float] = None
+    buy1h: Optional[int] = None
+    buyHistory1h: Optional[int] = None
+    buy1hChangePercent: Optional[float] = None
+    trade2h: Optional[int] = None
+    tradeHistory2h: Optional[int] = None
+    trade2hChangePercent: Optional[float] = None
+    sell2h: Optional[int] = None
+    sellHistory2h: Optional[int] = None
+    sell2hChangePercent: Optional[float] = None
+    buy2h: Optional[int] = None
+    buyHistory2h: Optional[int] = None
+    buy2hChangePercent: Optional[float] = None
+    trade4h: Optional[int] = None
+    tradeHistory4h: Optional[int] = None
+    trade4hChangePercent: Optional[float] = None
+    sell4h: Optional[int] = None
+    sellHistory4h: Optional[int] = None
+    sell4hChangePercent: Optional[float] = None
+    buy4h: Optional[int] = None
+    buyHistory4h: Optional[int] = None
+    buy4hChangePercent: Optional[float] = None
+    trade8h: Optional[int] = None
+    tradeHistory8h: Optional[int] = None
+    trade8hChangePercent: Optional[float] = None
+    sell8h: Optional[int] = None
+    sellHistory8h: Optional[int] = None
+    sell8hChangePercent: Optional[float] = None
+    buy8h: Optional[int] = None
+    buyHistory8h: Optional[int] = None
+    buy8hChangePercent: Optional[float] = None
+    trade24h: Optional[int] = None
+    tradeHistory24h: Optional[int] = None
+    trade24hChangePercent: Optional[float] = None
+    sell24h: Optional[int] = None
+    sellHistory24h: Optional[int] = None
+    sell24hChangePercent: Optional[float] = None
+    buy24h: Optional[int] = None
+    buyHistory24h: Optional[int] = None
+    buy24hChangePercent: Optional[float] = None
+    v1m: Optional[float] = None
+    v1mUSD: Optional[float] = None
+    vHistory1m: Optional[float] = None
+    vHistory1mUSD: Optional[float] = None
+    v1mChangePercent: Optional[float] = None
+    vBuy1m: Optional[float] = None
+    vBuy1mUSD: Optional[float] = None
+    vBuyHistory1m: Optional[float] = None
+    vBuyHistory1mUSD: Optional[float] = None
+    vBuy1mChangePercent: Optional[float] = None
+    vSell1m: Optional[float] = None
+    vSell1mUSD: Optional[float] = None
+    vSellHistory1m: Optional[float] = None
+    vSellHistory1mUSD: Optional[float] = None
+    vSell1mChangePercent: Optional[float] = None
+    v5m: Optional[float] = None
+    v5mUSD: Optional[float] = None
+    vHistory5m: Optional[float] = None
+    vHistory5mUSD: Optional[float] = None
+    v5mChangePercent: Optional[float] = None
+    vBuy5m: Optional[float] = None
+    vBuy5mUSD: Optional[float] = None
+    vBuyHistory5m: Optional[float] = None
+    vBuyHistory5mUSD: Optional[float] = None
+    vBuy5mChangePercent: Optional[float] = None
+    vSell5m: Optional[float] = None
+    vSell5mUSD: Optional[float] = None
+    vSellHistory5m: Optional[float] = None
+    vSellHistory5mUSD: Optional[float] = None
+    vSell5mChangePercent: Optional[float] = None
+    v30m: Optional[float] = None
+    v30mUSD: Optional[float] = None
+    vHistory30m: Optional[float] = None
+    vHistory30mUSD: Optional[float] = None
+    v30mChangePercent: Optional[float] = None
+    vBuy30m: Optional[float] = None
+    vBuy30mUSD: Optional[float] = None
+    vBuyHistory30m: Optional[float] = None
+    vBuyHistory30mUSD: Optional[float] = None
+    vBuy30mChangePercent: Optional[float] = None
+    vSell30m: Optional[float] = None
+    vSell30mUSD: Optional[float] = None
+    vSellHistory30m: Optional[float] = None
+    vSellHistory30mUSD: Optional[float] = None
+    vSell30mChangePercent: Optional[float] = None
+    v1h: Optional[float] = None
+    v1hUSD: Optional[float] = None
+    vHistory1h: Optional[float] = None
+    vHistory1hUSD: Optional[float] = None
+    v1hChangePercent: Optional[float] = None
+    vBuy1h: Optional[float] = None
+    vBuy1hUSD: Optional[float] = None
+    vBuyHistory1h: Optional[float] = None
+    vBuyHistory1hUSD: Optional[float] = None
+    vBuy1hChangePercent: Optional[float] = None
+    vSell1h: Optional[float] = None
+    vSell1hUSD: Optional[float] = None
+    vSellHistory1h: Optional[float] = None
+    vSellHistory1hUSD: Optional[float] = None
+    vSell1hChangePercent: Optional[float] = None
+    v2h: Optional[float] = None
+    v2hUSD: Optional[float] = None
+    vHistory2h: Optional[float] = None
+    vHistory2hUSD: Optional[float] = None
+    v2hChangePercent: Optional[float] = None
+    vBuy2h: Optional[float] = None
+    vBuy2hUSD: Optional[float] = None
+    vBuyHistory2h: Optional[float] = None
+    vBuyHistory2hUSD: Optional[float] = None
+    vBuy2hChangePercent: Optional[float] = None
+    vSell2h: Optional[float] = None
+    vSell2hUSD: Optional[float] = None
+    vSellHistory2h: Optional[float] = None
+    vSellHistory2hUSD: Optional[float] = None
+    vSell2hChangePercent: Optional[float] = None
+    v4h: Optional[float] = None
+    v4hUSD: Optional[float] = None
+    vHistory4h: Optional[float] = None
+    vHistory4hUSD: Optional[float] = None
+    v4hChangePercent: Optional[float] = None
+    vBuy4h: Optional[float] = None
+    vBuy4hUSD: Optional[float] = None
+    vBuyHistory4h: Optional[float] = None
+    vBuyHistory4hUSD: Optional[float] = None
+    vBuy4hChangePercent: Optional[float] = None
+    vSell4h: Optional[float] = None
+    vSell4hUSD: Optional[float] = None
+    vSellHistory4h: Optional[float] = None
+    vSellHistory4hUSD: Optional[float] = None
+    vSell4hChangePercent: Optional[float] = None
+    v8h: Optional[float] = None
+    v8hUSD: Optional[float] = None
+    vHistory8h: Optional[float] = None
+    vHistory8hUSD: Optional[float] = None
+    v8hChangePercent: Optional[float] = None
+    vBuy8h: Optional[float] = None
+    vBuy8hUSD: Optional[float] = None
+    vBuyHistory8h: Optional[float] = None
+    vBuyHistory8hUSD: Optional[float] = None
+    vBuy8hChangePercent: Optional[float] = None
+    vSell8h: Optional[float] = None
+    vSell8hUSD: Optional[float] = None
+    vSellHistory8h: Optional[float] = None
+    vSellHistory8hUSD: Optional[float] = None
+    vSell8hChangePercent: Optional[float] = None
+    v24h: Optional[float] = None
+    v24hUSD: Optional[float] = None
+    vHistory24h: Optional[float] = None
+    vHistory24hUSD: Optional[float] = None
+    v24hChangePercent: Optional[float] = None
+    vBuy24h: Optional[float] = None
+    vBuy24hUSD: Optional[float] = None
+    vBuyHistory24h: Optional[float] = None
+    vBuyHistory24hUSD: Optional[float] = None
+    vBuy24hChangePercent: Optional[float] = None
+    vSell24h: Optional[float] = None
+    vSell24hUSD: Optional[float] = None
+    vSellHistory24h: Optional[float] = None
+    vSellHistory24hUSD: Optional[float] = None
+    vSell24hChangePercent: Optional[float] = None
+    numberMarkets: Optional[int] = None
+    isScaledUiToken: Optional[bool] = None
     multiplier: Optional[float] = None
 
 
 # https://docs.birdeye.so/reference/get-defi-token_security
 class TokenSecurityResponse(BaseModel):
-    creatorAddress: str
+    creatorAddress: Optional[str] = None
     creatorOwnerAddress: Optional[str] = None
-    creatorBalance: float
-    creatorPercentage: float
+    creatorBalance: Optional[float] = None
+    creatorPercentage: Optional[float] = None
     ownerAddress: Optional[str] = None
     ownerOfOwnerAddress: Optional[str] = None
     ownerBalance: Optional[float] = None
     ownerPercentage: Optional[float] = None
-    creationTx: str
-    creationTime: int
-    creationSlot: int
-    mintTx: str
-    mintTime: int
-    mintSlot: int
-    metaplexUpdateAuthority: str
+    creationTx: Optional[str] = None
+    creationTime: Optional[int] = None
+    creationSlot: Optional[int] = None
+    mintTx: Optional[str] = None
+    mintTime: Optional[int] = None
+    mintSlot: Optional[int] = None
+    metaplexUpdateAuthority: Optional[str] = None
     metaplexOwnerUpdateAuthority: Optional[str] = None
-    metaplexUpdateAuthorityBalance: float
-    metaplexUpdateAuthorityPercent: float
-    mutableMetadata: bool
-    top10HolderBalance: float
-    top10HolderPercent: float
-    top10UserBalance: float
-    top10UserPercent: float
+    metaplexUpdateAuthorityBalance: Optional[float] = None
+    metaplexUpdateAuthorityPercent: Optional[float] = None
+    mutableMetadata: Optional[bool] = None
+    top10HolderBalance: Optional[float] = None
+    top10HolderPercent: Optional[float] = None
+    top10UserBalance: Optional[float] = None
+    top10UserPercent: Optional[float] = None
     isTrueToken: Optional[bool] = None
     fakeToken: Optional[bool] = None
-    totalSupply: float
+    totalSupply: Optional[float] = None
     preMarketHolder: List = []
     lockInfo: Optional[str] = None
     freezeable: Optional[bool] = None
     freezeAuthority: Optional[str] = None
     transferFeeEnable: Optional[bool] = None
     transferFeeData: Optional[str] = None
-    isToken2022: bool
+    isToken2022: Optional[bool] = None
     nonTransferable: Optional[bool] = None
-    jupStrictList: bool
+    jupStrictList: Optional[bool] = None
 
 
 # https://docs.birdeye.so/reference/get-defi-token_creation_info
 class TokenCreationInfoResponse(BaseModel):
-    txHash: str
-    slot: int
-    tokenAddress: str
-    decimals: int
-    owner: str
-    blockUnixTime: int
-    blockHumanTime: str
+    txHash: Optional[str] = None
+    slot: Optional[int] = None
+    tokenAddress: Optional[str] = None
+    decimals: Optional[int] = None
+    owner: Optional[str] = None
+    blockUnixTime: Optional[int] = None
+    blockHumanTime: Optional[str] = None
 
 
 class TokenHolder(BaseModel):
-    amount: str
-    decimals: int
-    mint: str
-    owner: str
-    token_account: str
-    ui_amount: float
-    is_scaled_ui_token: bool
+    amount: Optional[str] = None
+    decimals: Optional[int] = None
+    mint: Optional[str] = None
+    owner: Optional[str] = None
+    token_account: Optional[str] = None
+    ui_amount: Optional[float] = None
+    is_scaled_ui_token: Optional[bool] = None
     multiplier: Optional[float] = None
 
 
@@ -355,17 +355,17 @@ class TokenHoldersResponse(BaseModel):
 
 # https://docs.birdeye.so/reference/get-defi-v3-token-mint-burn-txs
 class MintBurnTx(BaseModel):
-    amount: str
-    block_human_time: str
-    block_time: int
-    common_type: str
-    decimals: int
-    mint: str
-    program_id: str
-    slot: int
-    tx_hash: str
-    ui_amount: float
-    ui_amount_string: str
+    amount: Optional[str] = None
+    block_human_time: Optional[str] = None
+    block_time: Optional[int] = None
+    common_type: Optional[str] = None
+    decimals: Optional[int] = None
+    mint: Optional[str] = None
+    program_id: Optional[str] = None
+    slot: Optional[int] = None
+    tx_hash: Optional[str] = None
+    ui_amount: Optional[float] = None
+    ui_amount_string: Optional[str] = None
 
 
 class MintBurnTxsResponse(BaseModel):
@@ -373,18 +373,18 @@ class MintBurnTxsResponse(BaseModel):
 
 
 class WalletPortfolioItem(BaseModel):
-    address: str
-    decimals: int
-    balance: int
-    uiAmount: float
-    chainId: str
-    name: str
-    symbol: str
-    icon: str
-    logoURI: str
-    priceUsd: float
-    valueUsd: float
-    isScaledUiToken: bool
+    address: Optional[str] = None
+    decimals: Optional[int] = None
+    balance: Optional[int] = None
+    uiAmount: Optional[float] = None
+    chainId: Optional[str] = None
+    name: Optional[str] = None
+    symbol: Optional[str] = None
+    icon: Optional[str] = None
+    logoURI: Optional[str] = None
+    priceUsd: Optional[float] = None
+    valueUsd: Optional[float] = None
+    isScaledUiToken: Optional[bool] = None
     multiplier: Optional[float] = None
 
 

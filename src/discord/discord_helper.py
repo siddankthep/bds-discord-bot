@@ -44,13 +44,10 @@ async def on_ready():
     client.logger.info(f"Logged in as {client.user} ({client.user.id})")
 
 
-@client.event
-async def on_message(message: discord.Message):
-    if message.author.id == client.user.id:
-        return
-    if message.content.startswith("$hello"):
-        client.logger.info(f"Message received: {message.content}")
-        await message.channel.send("Hello!")
+@client.tree.command(name="hello", description="Say hello to the bot")
+async def hello(interaction: discord.Interaction):
+    client.logger.info(f"Hello command received: {interaction.user.id}")
+    await interaction.response.send_message("Hello!")
 
 @client.tree.command(name="setup", description="Setup your wallet and price watch")
 @app_commands.describe(wallet_address="The Solana wallet address to check", price_watch="The price to watch")
@@ -286,7 +283,7 @@ def build_token_card(
 
     # Lines matching the original bot
     # Create
-    line_info_create = f"Create: {token_creation_time}"
+    line_info_create = f"Creation Time: {token_creation_time}"
 
     # MC, Liq, Price
     line_info_mc = f"MC: {_fmt_usd(market_cap)}"
@@ -294,7 +291,7 @@ def build_token_card(
     line_info_px = f"Price: {_fmt_price_with_zeroes(price)} ({price_change_5m:+.2f}%)"
 
     # Security
-    line_sec = f"NoMint {_yn(no_mint)}, Blacklist {_yn(blacklist_safe)}"
+    line_sec = f"NoMint {_yn(no_mint)} | Blacklist {_yn(blacklist_safe)}"
 
     # Put it all together
     card = (
