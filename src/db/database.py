@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List, Tuple
 from sqlalchemy import URL, BigInteger, Column, Float, String, create_engine, select
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.dialects.postgresql import insert
@@ -66,3 +66,10 @@ class DatabaseConnection:
             stmt = select(PriceWatch).where(PriceWatch.discord_id == discord_id)
             result = conn.execute(stmt)
             return result.mappings().one_or_none()
+
+    def get_all_users_with_settings(self) -> List[Tuple[int, str, float]]:
+        """Get all users who have both wallet address and price watch threshold configured"""
+        with self.engine.begin() as conn:
+            stmt = select(Wallet.discord_id, Wallet.wallet_address, PriceWatch.threshold).join(PriceWatch, Wallet.discord_id == PriceWatch.discord_id)
+            result = conn.execute(stmt)
+            return [(row.discord_id, row.wallet_address, row.threshold) for row in result.mappings()]
