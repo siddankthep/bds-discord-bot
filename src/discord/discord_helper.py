@@ -1,39 +1,29 @@
-import os
-from typing import Optional, List
+from typing import Optional
 from dotenv import load_dotenv
+import os
 import discord
-from discord import app_commands
-from src.sol_data.data_manager import DataManager, DataManagerAPIError
-from src.sol_data.data_models import WalletPortfolioItem, TokenOverviewResponse
-from src.discord.logger import handler, logger
+from src.sol_data.data_models import TokenOverviewResponse, WalletPortfolioItem
 from src.db.database import DatabaseConnection
+from src.sol_data.data_manager import DataManager, DataManagerAPIError
+from src.discord.logger import handler, logger
 
 load_dotenv()
 
 WRAPPED_TOKENS = {"SOL": "So11111111111111111111111111111111111111112", "ETH": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"}
 
-TOKEN = os.getenv("DISCORD_BOT_TOKEN")
-BIRDEYE_API_KEY = os.getenv("BIRDEYE_API_KEY")
-
-if not TOKEN:
-    raise SystemExit("DISCORD_BOT_TOKEN is not set in your environment/.env")
-if not BIRDEYE_API_KEY:
-    raise SystemExit("BIRDEYE_API_KEY is not set in your environment/.env")
-
 intents = discord.Intents.default()
 intents.message_content = True
+
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
         super().__init__(intents=intents)
-        self.tree = app_commands.CommandTree(self)
-        self.logger = logger
+        self.tree = discord.app_commands.CommandTree(self)
         self.db = DatabaseConnection()
-        self.data_manager = DataManager(api_key=BIRDEYE_API_KEY, chain="solana")
+        self.dm = DataManager()
 
-    async def setup_hook(self):
+    async def setup_hook(self) -> None:
         await self.tree.sync()
-
 
 
 client = MyClient(intents=intents)
@@ -41,179 +31,104 @@ client = MyClient(intents=intents)
 
 @client.event
 async def on_ready():
-    client.logger.info(f"Logged in as {client.user} ({client.user.id})")
+    logger.info(f"Logged in as user {client.user} with ID {client.user.id}")
 
 
-@client.tree.command(name="hello", description="Say hello to the bot")
-async def hello(interaction: discord.Interaction):
-    client.logger.info(f"Hello command received: {interaction.user.id}")
-    await interaction.response.send_message("Hello!")
-
-@client.tree.command(name="setup", description="Setup your wallet and price watch")
-@app_commands.describe(wallet_address="The Solana wallet address to check", price_watch="The price to watch")
-async def setup(interaction: discord.Interaction, wallet_address: str, price_watch: float):
-    client.logger.info(f"Setup command received: {wallet_address}, {price_watch}")
+@client.tree.command(name="setup", description="Setup user's wallet address and desired threshold")
+async def setup_user(interactions: discord.Interaction, wallet_address: str, threshold: float):
     try:
-        client.db.upsert_wallet(interaction.user.id, wallet_address)
-        client.db.upsert_price_watch(interaction.user.id, price_watch)
-        interaction.response.send_message(
-            f"Setup complete: {wallet_address}, {price_watch}! Now you will receive a notification when the price of the token you are watching reaches your threshold."
-        )
+        client.db.upsert_wallet(interactions.user.id, wallet_address)
+        logger.info(f"Upserted wallet address for user {interactions.user}!")
+        client.db.upsert_price_watch(interactions.user.id, threshold)
+        logger.info(f"Upserted wallet threshold for user {interactions.user}!")
+
+        await interactions.response.send_message("Setup complete! Now you can watch over tokens in your wallet!")
+
     except Exception as e:
-        await interaction.response.send_message(f"Error setting up: {str(e)}")
+        await interactions.response.send_message(f"Error setting up wallet: {e}")
 
 
-@client.tree.command(name="alert", description="Get a token alert")
-async def get_token_alert(interaction: discord.Interaction):
+@client.tree.command(name="alert", description="Get all tokens alert")
+async def alert(interactions: discord.Interaction):
+    await interactions.response.defer()
+
     try:
-        print(f"DEBUG: Alert command started for user {interaction.user.id}")
-        logger.info(f"Alert command started for user {interaction.user.id}")
+        discord_id = interactions.user.id
+        wallet = client.db.get_wallet(discord_id)
+        price_watch = client.db.get_price_watch(discord_id)
 
-        # Defer the response immediately to avoid timeout
-        await interaction.response.defer()
-        print("DEBUG: Interaction response deferred")
-
-        # Check if user has setup
-        price_watch = client.db.get_price_watch(interaction.user.id)
-        wallet = client.db.get_wallet(interaction.user.id)
-
-        print(f"DEBUG: price_watch = {price_watch}, wallet = {wallet}")
-        logger.info(f"Retrieved price_watch: {price_watch}, wallet: {wallet}")
-
-        if not price_watch or not wallet:
-            print("DEBUG: No price watch or wallet found")
-            await interaction.followup.send("You haven't setup a price watch yet. Please use the `/setup` command to setup a price watch.")
+        if not wallet or not price_watch:
+            await interactions.followup.send("Please setup your wallet and threshold first!")
             return
 
-        print(f"DEBUG: Getting portfolio for wallet {wallet.wallet_address}")
-        logger.info(f"Getting portfolio for wallet {wallet.wallet_address}")
-
-        # Get user's tokens
-        portfolio_response = client.data_manager.get_wallet_portfolio(wallet.wallet_address)
-        print(f"DEBUG: Portfolio response: {portfolio_response}")
-
-        all_users_tokens = portfolio_response.items
-        print(f"DEBUG: Found {len(all_users_tokens)} tokens in portfolio")
-        logger.info(f"Found {len(all_users_tokens)} tokens in portfolio")
+        all_users_tokens = client.dm.get_wallet_portfolio(wallet.wallet_address).items
 
         if not all_users_tokens:
-            await interaction.followup.send("No tokens found in your wallet portfolio.")
+            await interactions.followup.send("No tokens found in your wallet!")
             return
 
-        # Send status message
-        await interaction.followup.send(
-            f"🔍 Checking {len(all_users_tokens)} tokens in your portfolio for price changes above {price_watch.threshold}%..."
-        )
+        await interactions.followup.send(f"Checking {len(all_users_tokens)} tokens for price changes above {price_watch.threshold}...")
 
         tokens_meeting_threshold = []
-        tokens_checked = 0
 
         for token in all_users_tokens:
-            tokens_checked += 1
-            token_name = token.name
-            token_address = token.address
-            if token_name in WRAPPED_TOKENS:
-                token_address = WRAPPED_TOKENS[token_name]
-            print(f"DEBUG: Checking token {tokens_checked}/{len(all_users_tokens)}: {token_address}")
+            logger.info(f"Processing token: {token.address}")
+
+            if token.name in WRAPPED_TOKENS:
+                token.address = WRAPPED_TOKENS[token.name]
 
             try:
-                token_overview = client.data_manager.get_token_overview(token_address)
-            except DataManagerAPIError as e:
-                logger.error(f"Failed to get token data for {token_address}: {e}")
+                token_overview = client.dm.get_token_overview(token.address)
+                price_change_5m = token_overview.priceChange5mPercent
+
+                if not price_change_5m:
+                    logger.info(f"Price change 5m is not available for {token.address}")
+                    continue
+            except DataManagerAPIError:
+                logger.error("Failed to fetch token overview!")
                 continue
 
-            price_change_5m = token_overview.priceChange5mPercent
-
-            print(f"DEBUG: Token {token_address} - Price change 5m: {price_change_5m}%, Threshold: {price_watch.threshold}%")
-            logger.info(f"Token {token_address} - Price change: {price_change_5m}%, Threshold: {price_watch.threshold}%")
-
-            if price_change_5m is None:
-                print(f"DEBUG: Token {token_address} has no price change 5m")
-                logger.info(f"Token {token_address} has no price change 5m")
-                continue
-
-            if price_change_5m > price_watch.threshold:
-                print(f"DEBUG: Token {token_address} meets threshold! Getting additional data...")
-
+            if price_change_5m >= price_watch.threshold:
                 try:
-                    token_creation_info = client.data_manager.get_token_creation_info(token_address)
-                    token_creation_time = token_creation_info.blockHumanTime
-                except DataManagerAPIError as e:
-                    logger.error(f"Failed to get token creation info for {token_address}: {e}")
+                    creation_info = client.dm.get_token_creation_info(token.address)
+                    token_creation_time = creation_info.blockHumanTime
+                except DataManagerAPIError:
+                    logger.error("Failed to fetch token creation info!")
                     token_creation_time = "-"
 
                 try:
-                    security_info = client.data_manager.get_token_security(token_address)
-                    no_mint = security_info.ownerOfOwnerAddress == "11111111111111111111111111111111"
-                    non_transferable = bool(security_info.nonTransferable)
-                    blacklist_safe = not non_transferable
-                except DataManagerAPIError as e:
-                    logger.error(f"Failed to get security info for {token_address}: {e}")
+                    security = client.dm.get_token_security(token.address)
+                    no_mint = security.ownerOfOwnerAddress == "11111111111111111111111111111111"
+                    blacklist = security.fakeToken
+                except DataManagerAPIError:
+                    logger.error("Failed to fetch token security data!")
                     no_mint = None
-                    blacklist_safe = None
-
+                    blacklist = None
 
                 total_supply = token_overview.totalSupply
-
                 try:
-                    top_10_holders = client.data_manager.get_token_holders(token_address)
-                    top_10_holders_data = top_10_holders.items
-                    top_10_holders_pct = [item.ui_amount / total_supply * 100 for item in top_10_holders_data]
-                    top_10_holders_pct_str = [f"{pct:.2f}%" for pct in top_10_holders_pct]
-                    top_10_holders_pct_str_formatted = " | ".join(top_10_holders_pct_str)
-                except DataManagerAPIError as e:
-                    logger.error(f"Failed to get top 10 holders for {token_address}: {e}")
-                    top_10_holders_data = []
-                    top_10_holders_pct = []
-                    top_10_holders_pct_str = []
+                    top_holders = client.dm.get_token_holders(token.address)
+                    top_10_holder_str = ""
+                    for holder in top_holders.items:
+                        top_10_holder_str += f" {holder.ui_amount / total_supply * 100:.2f}%" + "| "
 
+                except DataManagerAPIError:
+                    logger.error("Failed to fetch top 10 token holders!")
+                    top_10_holder_str = "- " + "| -" * 9
 
-                formatted_response = build_token_card(
-                    token,
-                    token_overview,
-                    token_creation_time,
-                    no_mint,
-                    blacklist_safe,
-                    top_10_holders_pct_str_formatted,
-                    "Solana",
-                )
+                token_card = build_token_card(token, token_overview, token_creation_time, no_mint, blacklist, top_10_holder_str)
 
-                tokens_meeting_threshold.append(formatted_response)
+                tokens_meeting_threshold.append(token_card)
 
-        print(f"DEBUG: Checked {tokens_checked} tokens, {len(tokens_meeting_threshold)} meet threshold")
-        logger.info(f"Checked {tokens_checked} tokens, {len(tokens_meeting_threshold)} meet threshold")
-
-        # Send followup messages with results
-        if tokens_meeting_threshold:
-            print("DEBUG: Sending alert for tokens meeting threshold")
-            for i, token_alert in enumerate(tokens_meeting_threshold):
-                if i == 0:
-                    await interaction.followup.send(f"🚨 **ALERT: {len(tokens_meeting_threshold)} token(s) meet your threshold!**\n\n{token_alert}")
-                else:
-                    await interaction.followup.send(token_alert)
+        if not tokens_meeting_threshold:
+            await interactions.followup.send(f"No tokens found that met threshold {price_watch.threshold}!")
         else:
-            print("DEBUG: No tokens meet the threshold, sending 'no alerts' message")
-            await interaction.followup.send(
-                f"✅ No alerts: None of your {tokens_checked} tokens currently exceed your {price_watch.threshold}% threshold."
-            )
-
+            await interactions.followup.send(f"Found {len(tokens_meeting_threshold)} tokens that meets your threshold!")
+            for token_card in tokens_meeting_threshold:
+                await interactions.followup.send(token_card)
     except Exception as e:
-        print(f"DEBUG: Exception in alert command: {str(e)}")
-        logger.error(f"Exception in alert command: {str(e)}", exc_info=True)
-
-        # Make sure we always respond to the interaction
-        try:
-            if not interaction.response.is_done():
-                await interaction.response.defer()
-            await interaction.followup.send(f"❌ An error occurred while checking alerts: {str(e)}")
-        except Exception as response_error:
-            print(f"DEBUG: Failed to send error response: {str(response_error)}")
-            logger.error(f"Failed to send error response: {str(response_error)}")
-
-
-def run_bot():
-    """Function to run the Discord bot"""
-    client.run(TOKEN, log_handler=handler)
+        logger.error(f"Error occurred while getting token alerts: {e}")
+        interactions.followup.send(f"Error occurred while getting token alerts: {e}")
 
 
 def _fmt_usd(n):
@@ -244,7 +159,6 @@ def _fmt_price_with_zeroes(p):
     if p >= 0.001:
         s = f"${p:,.6f}".rstrip("0").rstrip(".")
         return s
-    # represent as $0.0{n}digits
     frac = f"{p:.18f}".split(".")[1].rstrip("0")
     n0 = 0
     for ch in frac:
@@ -265,11 +179,10 @@ def build_token_card(
     token_overview: TokenOverviewResponse,
     token_creation_time: str,
     no_mint: Optional[bool] = None,
-    blacklist_safe: Optional[bool] = None,  # bool | None (from token_security)
-    top_10_holders_pct_str_formatted: List[float] = None,  # list[float] (each already in %), optional
+    blacklist: Optional[bool] = None,
+    top_10_holders_str: str = None,
     chain="Solana",
 ):
-    # Pull what you already computed in your snippet
     liquidity = token_overview.liquidity
     price = token_overview.price
     token_symbol = token_overview.symbol or "Unknown"
@@ -281,19 +194,17 @@ def build_token_card(
     header_left = f"${token_symbol} – {chain}"
     header = f"{header_left}\n{addr}"
 
-    # Lines matching the original bot
     # Create
     line_info_create = f"Creation Time: {token_creation_time}"
 
     # MC, Liq, Price
-    line_info_mc = f"MC: {_fmt_usd(market_cap)}"
+    line_info_mc = f"- MC: {_fmt_usd(market_cap)}"
     line_info_liq = f"Liq: {_fmt_usd(liquidity)}"
     line_info_px = f"Price: {_fmt_price_with_zeroes(price)} ({price_change_5m:+.2f}%)"
 
     # Security
-    line_sec = f"NoMint {_yn(no_mint)} | Blacklist {_yn(blacklist_safe)}"
+    line_sec = f"NoMint {_yn(no_mint)} | Blacklist {_yn(blacklist)}"
 
-    # Put it all together
     card = (
         f"""{header}
 
@@ -307,8 +218,12 @@ def build_token_card(
 {line_sec}
 
 💰 Top10 Holding
-{top_10_holders_pct_str_formatted}
+{top_10_holders_str}
 """
     ).strip()
 
     return card
+
+
+def run_bot():
+    client.run(os.getenv("DISCORD_BOT_TOKEN"), log_handler=handler)

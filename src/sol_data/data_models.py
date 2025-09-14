@@ -4,13 +4,16 @@ from typing import Optional, List, Dict
 
 # https://docs.birdeye.so/reference/get-defi-multi_price
 class Price(BaseModel):
-    isScaledUiToken: Optional[bool] = None
-    value: Optional[float] = None
-    updateUnixTime: Optional[int] = None
-    updateHumanTime: Optional[str] = None
-    priceChange24h: Optional[float] = None
+    value: float
+    updateUnixTime: int
+    updateHumanTime: str
+    priceChange24h: float
     priceInNative: Optional[float] = None
     liquidity: Optional[float] = None
+    isScaledUiToken: Optional[bool] = None
+    scaledValue: Optional[float] = None
+    multiplier: Optional[float] = None
+    scaledPriceInNative: Optional[float] = None
 
 
 class MultiPriceResponse(RootModel[Dict[str, Price]]):
@@ -316,7 +319,7 @@ class TokenSecurityResponse(BaseModel):
     fakeToken: Optional[bool] = None
     totalSupply: Optional[float] = None
     preMarketHolder: List = []
-    lockInfo: Optional[str] = None
+    lockInfo: Optional[dict] = None
     freezeable: Optional[bool] = None
     freezeAuthority: Optional[str] = None
     transferFeeEnable: Optional[bool] = None
@@ -350,27 +353,7 @@ class TokenHolder(BaseModel):
 
 # https://docs.birdeye.so/reference/get-defi-v3-token-holder
 class TokenHoldersResponse(BaseModel):
-    items: List[TokenHolder]
-
-
-# https://docs.birdeye.so/reference/get-defi-v3-token-mint-burn-txs
-class MintBurnTx(BaseModel):
-    amount: Optional[str] = None
-    block_human_time: Optional[str] = None
-    block_time: Optional[int] = None
-    common_type: Optional[str] = None
-    decimals: Optional[int] = None
-    mint: Optional[str] = None
-    program_id: Optional[str] = None
-    slot: Optional[int] = None
-    tx_hash: Optional[str] = None
-    ui_amount: Optional[float] = None
-    ui_amount_string: Optional[str] = None
-
-
-class MintBurnTxsResponse(BaseModel):
-    items: List[MintBurnTx]
-
+    items: List[TokenHolder] = []
 
 class WalletPortfolioItem(BaseModel):
     address: Optional[str] = None
@@ -389,4 +372,4 @@ class WalletPortfolioItem(BaseModel):
 
 
 class WalletPortfolioResponse(BaseModel):
-    items: List[WalletPortfolioItem]
+    items: List[WalletPortfolioItem] = []

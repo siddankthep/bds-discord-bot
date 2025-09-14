@@ -42,14 +42,7 @@ url = URL.create(
 
 class DatabaseConnection:
     def __init__(self):
-        self.engine = create_engine(url, echo=False, pool_pre_ping=True, connect_args={"sslmode": "require"})
-        self.session_maker = sessionmaker(self.engine, expire_on_commit=False)
-
-    def get_session(self) -> Session:
-        return self.session_maker()
-
-    def get_engine(self):
-        return self.engine
+        self.engine = create_engine(url, connect_args={"sslmode": "require"})
 
     def test_connection(self):
         with self.engine.begin() as conn:
