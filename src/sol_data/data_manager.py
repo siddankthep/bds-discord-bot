@@ -8,7 +8,6 @@ from src.sol_data.data_models import (
     TokenSecurityResponse,
     TokenCreationInfoResponse,
     TokenHoldersResponse,
-    MintBurnTxsResponse,
     WalletPortfolioResponse,
 )
 
